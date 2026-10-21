@@ -44,38 +44,44 @@ else
 fi
 
 echo "→ Compiling $APP_NAME $VERSION"
-rm -rf "$APP"
-mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$BUILD/obj"
+# Assemble and sign outside the project folder: iCloud-synced folders (like Documents)
+# keep re-adding Finder metadata, which makes codesign fail.
+STAGE="$(mktemp -d "${TMPDIR:-/tmp}/wick-build.XXXXXX")"
+trap 'rm -rf "$STAGE"' EXIT
+SAPP="$STAGE/$APP_NAME.app"
+mkdir -p "$SAPP/Contents/MacOS" "$SAPP/Contents/Resources" "$STAGE/obj"
 
 for ARCH in arm64 x86_64; do
   swiftc -O -swift-version 5 -parse-as-library ${FLAGS[@]+"${FLAGS[@]}"} \
     -sdk "$SDK" -target "$ARCH-apple-macos$MIN_MACOS" \
     "$ROOT"/Sources/*.swift \
-    -o "$BUILD/obj/$APP_NAME-$ARCH"
+    -o "$STAGE/obj/$APP_NAME-$ARCH"
 done
-lipo -create -output "$APP/Contents/MacOS/$APP_NAME" "$BUILD/obj/$APP_NAME-arm64" "$BUILD/obj/$APP_NAME-x86_64"
+lipo -create -output "$SAPP/Contents/MacOS/$APP_NAME" "$STAGE/obj/$APP_NAME-arm64" "$STAGE/obj/$APP_NAME-x86_64"
 
 sed -e "s/__VERSION__/$VERSION/g" -e "s/__BUNDLE_ID__/$BUNDLE_ID/g" \
-  "$ROOT/Resources/Info.plist" > "$APP/Contents/Info.plist"
-cp "$ROOT/Resources/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
+  "$ROOT/Resources/Info.plist" > "$SAPP/Contents/Info.plist"
+cat "$ROOT/Resources/AppIcon.icns" > "$SAPP/Contents/Resources/AppIcon.icns"  # cat copies data, not metadata
 
-# Strip Finder/quarantine metadata, which codesign rejects.
-xattr -cr "$APP"
-
+xattr -cr "$SAPP"
 # Ad-hoc signature so macOS treats it as a proper app (notifications, login item).
-codesign --force --deep --sign - "$APP"
+codesign --force --deep --sign - "$SAPP"
+
+mkdir -p "$BUILD"
+rm -rf "$APP"
+ditto --norsrc --noextattr "$SAPP" "$APP"
 echo "✓ Built $APP"
 
 if $ZIP; then
   rm -f "$BUILD/$APP_NAME.zip"
-  ditto -c -k --keepParent "$APP" "$BUILD/$APP_NAME.zip"
+  ditto -c -k --norsrc --noextattr --keepParent "$SAPP" "$BUILD/$APP_NAME.zip"
   echo "✓ Zipped $BUILD/$APP_NAME.zip"
 fi
 
 if $INSTALL; then
   pkill -x "$APP_NAME" 2>/dev/null || true
   rm -rf "/Applications/$APP_NAME.app"
-  cp -R "$APP" "/Applications/$APP_NAME.app"
+  ditto --norsrc --noextattr "$SAPP" "/Applications/$APP_NAME.app"
   open "/Applications/$APP_NAME.app"
   echo "✓ Installed to /Applications and launched. Look for the candle in your menu bar 🕯️"
 fi
