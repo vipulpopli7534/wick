@@ -59,6 +59,9 @@ sed -e "s/__VERSION__/$VERSION/g" -e "s/__BUNDLE_ID__/$BUNDLE_ID/g" \
   "$ROOT/Resources/Info.plist" > "$APP/Contents/Info.plist"
 cp "$ROOT/Resources/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
 
+# Strip Finder/quarantine metadata, which codesign rejects.
+xattr -cr "$APP"
+
 # Ad-hoc signature so macOS treats it as a proper app (notifications, login item).
 codesign --force --deep --sign - "$APP"
 echo "✓ Built $APP"
