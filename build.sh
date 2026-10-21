@@ -9,7 +9,7 @@ set -euo pipefail
 APP_NAME="Wick"
 BUNDLE_ID="${BUNDLE_ID:-io.github.wick.app}"
 VERSION="${VERSION:-1.0.0}"
-MIN_MACOS="13.0"
+MIN_MACOS="11.0"
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 BUILD="$ROOT/build"
@@ -31,13 +31,24 @@ if ! command -v swiftc >/dev/null 2>&1; then
 fi
 
 SDK="$(xcrun --sdk macosx --show-sdk-path)"
+SDK_VERSION="$(xcrun --sdk macosx --show-sdk-version)"
+SDK_MAJOR="${SDK_VERSION%%.*}"
+echo "→ Using $(swiftc --version 2>&1 | head -1)"
+echo "→ macOS SDK $SDK_VERSION"
+
+FLAGS=()
+if [ "$SDK_MAJOR" -ge 13 ]; then
+  FLAGS+=(-D HAS_SMAPPSERVICE)   # "Open at login" needs the macOS 13 SDK
+else
+  echo "  (SDK older than 13: building without the 'Open at login' option. Run 'softwareupdate --install -a' or update the Command Line Tools to get it.)"
+fi
 
 echo "→ Compiling $APP_NAME $VERSION"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$BUILD/obj"
 
 for ARCH in arm64 x86_64; do
-  swiftc -O -swift-version 5 -parse-as-library \
+  swiftc -O -swift-version 5 -parse-as-library ${FLAGS[@]+"${FLAGS[@]}"} \
     -sdk "$SDK" -target "$ARCH-apple-macos$MIN_MACOS" \
     "$ROOT"/Sources/*.swift \
     -o "$BUILD/obj/$APP_NAME-$ARCH"

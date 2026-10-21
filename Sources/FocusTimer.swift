@@ -7,7 +7,6 @@ enum Phase: Equatable {
 }
 
 /// Keeps time using an end date, so it stays accurate across sleep and busy CPUs.
-@MainActor
 final class FocusTimer: NSObject {
     /// Run `WICK_FAST=1 open Wick.app` (or set it in your shell) to test with 25 s / 5 s sessions.
     static let fastMode = ProcessInfo.processInfo.environment["WICK_FAST"] == "1"
@@ -34,7 +33,7 @@ final class FocusTimer: NSObject {
         case .idle: return Self.focusLength
         default:
             if isPaused { return pausedRemaining }
-            guard let endDate else { return 0 }
+            guard let endDate = endDate else { return 0 }
             return max(0, endDate.timeIntervalSinceNow)
         }
     }

@@ -22,7 +22,7 @@ Click the candle in your menu bar to light it. It slowly melts as your focus ses
   - a silent notification banner
 - ☕ **Breaks start automatically** with a nudge to stand up and drink water
 - 🔥 **Streak counter:** "Burnt 5 candles today 🕯️", plus your all-time total
-- 🚀 **Open at login**, no Dock icon, tiny and native (Swift + AppKit, no dependencies)
+- 🚀 **Open at login** (macOS 13+), no Dock icon, tiny and native (Swift + AppKit, no dependencies)
 
 ## Install
 
@@ -49,7 +49,7 @@ cd wick
 
 Other options: `./build.sh` (just build into `build/Wick.app`) and `./build.sh --zip` (also create `build/Wick.zip`).
 
-Requires macOS 13 Ventura or later. Runs natively on Apple Silicon and Intel.
+Requires macOS 11 Big Sur or later ("Open at login" needs macOS 13). Runs natively on Apple Silicon and Intel.
 
 ## How to use
 

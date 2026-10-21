@@ -1,7 +1,8 @@
 import AppKit
+#if HAS_SMAPPSERVICE
 import ServiceManagement
+#endif
 
-@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private let timer = FocusTimer()
@@ -100,9 +101,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let countdown = item("Show countdown in menu bar", #selector(toggleCountdown))
         countdown.state = showCountdown ? .on : .off
         menu.addItem(countdown)
-        let login = item("Open at login", #selector(toggleLogin))
-        login.state = SMAppService.mainApp.status == .enabled ? .on : .off
-        menu.addItem(login)
+        #if HAS_SMAPPSERVICE
+        if #available(macOS 13.0, *) {
+            let login = item("Open at login", #selector(toggleLogin))
+            login.state = SMAppService.mainApp.status == .enabled ? .on : .off
+            menu.addItem(login)
+        }
+        #endif
 
         menu.addItem(.separator())
         menu.addItem(item("Quit Wick", #selector(quit), key: "q"))
@@ -129,7 +134,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         refresh()
     }
 
+    #if HAS_SMAPPSERVICE
     @objc private func toggleLogin() {
+        guard #available(macOS 13.0, *) else { return }
         do {
             if SMAppService.mainApp.status == .enabled {
                 try SMAppService.mainApp.unregister()
@@ -144,6 +151,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             alert.runModal()
         }
     }
+    #endif
 
     // MARK: - Phases
 

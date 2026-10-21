@@ -2,7 +2,6 @@ import AppKit
 import UserNotifications
 
 /// Silent nudges only: trackpad haptics and soundless notification banners.
-@MainActor
 final class Nudger: NSObject, UNUserNotificationCenterDelegate {
     func requestPermission() {
         let center = UNUserNotificationCenter.current()
@@ -31,9 +30,9 @@ final class Nudger: NSObject, UNUserNotificationCenterDelegate {
     }
 
     // Show banners even though Wick is technically the active app.
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
-                                            willPresent notification: UNNotification,
-                                            withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                willPresent notification: UNNotification,
+                                withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         completionHandler([.banner, .list])
     }
 }

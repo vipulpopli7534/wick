@@ -2,7 +2,6 @@ import AppKit
 
 @main
 enum WickApp {
-    @MainActor
     static func main() {
         let app = NSApplication.shared
         let delegate = AppDelegate()
